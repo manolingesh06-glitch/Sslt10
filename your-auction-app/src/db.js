@@ -8,10 +8,14 @@ const dbPath = process.env.SQLITE_PATH || './data/sslt10.db';
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 const sqlite = new Database(dbPath);
 sqlite.pragma('journal_mode = WAL');
+sqlite.pragma('synchronous = NORMAL');
 sqlite.pragma('foreign_keys = ON');
 sqlite.exec(fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8'));
 
-const keep = new Set(['tournaments','teams','players','users','app_settings','live_state']);
+const keep = new Set([
+  'tournaments','teams','players','users','app_settings','live_state',
+  'live_auction_state','live_bids','live_passes','live_chat'
+]);
 sqlite.pragma('foreign_keys = OFF');
 for (const row of sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all()) {
   if (!keep.has(row.name)) {
@@ -21,8 +25,6 @@ for (const row of sqlite.prepare("SELECT name FROM sqlite_master WHERE type='tab
 }
 sqlite.pragma('foreign_keys = ON');
 
-// One-time clean boot: old tournament state, teams and players must never mix
-// with SSLT10. Later restarts preserve the live auction normally.
 const migration = sqlite.prepare("SELECT value FROM app_settings WHERE key='sslt10_migration_version'").get();
 if (!migration) {
   sqlite.transaction(() => {
@@ -30,7 +32,11 @@ if (!migration) {
     sqlite.prepare('DELETE FROM players').run();
     sqlite.prepare("DELETE FROM users WHERE role <> 'host'").run();
     sqlite.prepare("UPDATE live_state SET data='{}' WHERE id=1").run();
-    sqlite.prepare("INSERT INTO app_settings (key,value) VALUES ('sslt10_migration_version','1')").run();
+    sqlite.prepare('DELETE FROM live_auction_state').run();
+    sqlite.prepare('DELETE FROM live_bids').run();
+    sqlite.prepare('DELETE FROM live_passes').run();
+    sqlite.prepare('DELETE FROM live_chat').run();
+    sqlite.prepare("INSERT INTO app_settings (key,value) VALUES ('sslt10_migration_version','2')").run();
   })();
 }
 
