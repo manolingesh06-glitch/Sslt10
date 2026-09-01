@@ -22,7 +22,7 @@ function persistChat(value,now){if(!Array.isArray(value))return;for(const m of v
 function persistUpdates(updates,now){
  const meta=readMeta();const metaKeys=new Set(['currentIdx','currentBid','timerEndAt','paused','autoAdvance','auctionStarted','_clockSyncTs','presence','sessionLocks','lastResolvedKey','lastResolvedIdx']);
  for(const [rawKey,value] of Object.entries(updates||{})){const key=rawKey.includes('.')?rawKey.split('.')[0]:rawKey;
-  if(key==='auctionState'){if(rawKey==='auctionState'&&plain(value))for(const [k,v] of Object.entries(value))persistAuctionStateValue(k,v,now);else if(rawKey.startsWith('auctionState.'))persistAuctionStateValue(rawKey.slice(14),value,now);}
+  if(key==='auctionState'){if(rawKey==='auctionState'&&plain(value))for(const [k,v] of Object.entries(value))persistAuctionStateValue(k,v,now);else if(rawKey.startsWith('auctionState.'))persistAuctionStateValue(rawKey.slice(13),value,now);}
   else if(key==='bidHistory'){if(rawKey==='bidHistory'&&plain(value))for(const [k,v] of Object.entries(value))persistBidHistoryKey(k,v,now);else if(rawKey.startsWith('bidHistory.'))persistBidHistoryKey(rawKey.slice(11),value,now);}
   else if(key==='passedTeams')persistPasses(value,now);else if(key==='chatMessages')persistChat(value,now);else if(metaKeys.has(key)){if(rawKey.includes('.'))setPath(meta,key,value);else if(del(value))delete meta[key];else meta[key]=clone(value);}
  }
@@ -31,10 +31,6 @@ function persistUpdates(updates,now){
 function getDoc(){return doc;}
 function resolveSentinelsDeep(source,now){if(del(source))return source;if(serverTs(source))return{__ts:now};if(Array.isArray(source))return source.map(v=>resolveSentinelsDeep(v,now));if(plain(source)){const out={};for(const k of Object.keys(source))out[k]=resolveSentinelsDeep(source[k],now);return out;}return source;}
 function applySet(updates){const now=Date.now();mergeInto(doc,updates||{});persistUpdates(updates||{},now);return{doc,patch:resolveSentinelsDeep(updates||{},now)};}
-
-// Transactions are optimistic: begin returns a snapshot and a short-lived
-// token, while commit validates against the latest authoritative document.
-// There is no global waiting queue, so simultaneous bids don't block each other.
 const txs=new Map();const TX_TIMEOUT_MS=4000;
 function beginTransaction(socketId){const txId=Math.random().toString(36).slice(2)+Date.now().toString(36);const timer=setTimeout(()=>txs.delete(txId),TX_TIMEOUT_MS);txs.set(txId,{socketId,timer});return Promise.resolve({txId,doc:clone(doc)});}
 function commitTransaction(socketId,txId,updates){const tx=txs.get(txId);if(!tx||tx.socketId!==socketId)throw new Error('Transaction expired — please try again.');clearTimeout(tx.timer);txs.delete(txId);return applySet(updates||{});}
