@@ -26,13 +26,11 @@
     const guarded=function(){
       let signature='';
       try{
-        const auction=window.auctionState||{};
-        let sold=0,unsold=0;
-        for(const k of Object.keys(auction)){if(auction[k]?.status==='sold')sold++;else if(auction[k]?.status==='unsold')unsold++;}
-        const idx=window.currentIdx??-1;
+        const idx=document.getElementById('auctionNo')?.textContent||'';
+        const status=document.getElementById('statusArea')?.textContent||'';
         const filter=document.querySelector('.ftab.active')?.dataset?.f||'';
         const search=document.getElementById('searchBox')?.value||'';
-        signature=`${idx}|${sold}|${unsold}|${filter}|${search}`;
+        signature=`${idx}|${status}|${filter}|${search}`;
       }catch(_){}
       if(signature&&signature===lastListSignature)return;
       lastListSignature=signature;
