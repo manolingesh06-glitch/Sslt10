@@ -68,8 +68,45 @@ CREATE TABLE IF NOT EXISTS app_settings (
   updated_at TEXT DEFAULT (datetime('now'))
 );
 
+-- Small control/meta state only. Auction results, bids and chat are normalized below.
 CREATE TABLE IF NOT EXISTS live_state (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   data TEXT NOT NULL DEFAULT '{}'
 );
 INSERT OR IGNORE INTO live_state (id, data) VALUES (1, '{}');
+
+CREATE TABLE IF NOT EXISTS live_auction_state (
+  player_key TEXT PRIMARY KEY,
+  status TEXT NOT NULL CHECK (status IN ('sold','unsold')),
+  team TEXT,
+  price_cr REAL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_live_auction_status ON live_auction_state(status);
+
+CREATE TABLE IF NOT EXISTS live_bids (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  player_key TEXT NOT NULL,
+  seq INTEGER NOT NULL,
+  team TEXT NOT NULL,
+  price_cr REAL NOT NULL,
+  created_at INTEGER NOT NULL,
+  UNIQUE(player_key, seq)
+);
+CREATE INDEX IF NOT EXISTS idx_live_bids_player ON live_bids(player_key, seq);
+
+CREATE TABLE IF NOT EXISTS live_passes (
+  player_key TEXT NOT NULL,
+  team TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY(player_key, team)
+);
+
+CREATE TABLE IF NOT EXISTS live_chat (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  sender TEXT NOT NULL,
+  role TEXT NOT NULL,
+  text TEXT NOT NULL,
+  ts INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_live_chat_ts ON live_chat(ts DESC);
