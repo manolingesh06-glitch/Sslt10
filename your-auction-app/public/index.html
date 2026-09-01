@@ -11,8 +11,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SPL Auction">
-<title>SPL Season 3 — Live Auction Board</title>
+<meta name="apple-mobile-web-app-title" content="SSLT10 Auction">
+<title>SSLT10 — Live Auction Board</title>
 <link rel="stylesheet" href="/css/styles.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -46,7 +46,7 @@
           <text x="50" y="63" text-anchor="middle" font-family="Anton, sans-serif" font-size="34" fill="#1a1200">S3</text>
         </svg>
       </div>
-      <h1>SPL Season 3 Auction</h1>
+      <h1>SSLT10 Auction</h1>
       <p class="sub">Sign in as Host or as a Franchise Owner</p>
       <div class="login-ticker" aria-hidden="true">
         <span>591 PLAYERS &nbsp;&bull;&nbsp; 12 FRANCHISES &nbsp;&bull;&nbsp; &#8377;120CR PURSE EACH &nbsp;&bull;&nbsp; 591 PLAYERS &nbsp;&bull;&nbsp; 12 FRANCHISES &nbsp;&bull;&nbsp; &#8377;120CR PURSE EACH &nbsp;&bull;&nbsp;</span>
@@ -65,110 +65,6 @@
       <button class="act btn-sold login-btn" id="loginBtn">Enter the Auction</button>
       <div class="login-error" id="loginError"></div>
       <button type="button" class="admin-toggle-link" id="adminPanelToggle">⚙ Auction Admin — set up a new auction</button>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================================
-     ADMIN PANEL — new, additive. Lets an Admin create an auction,
-     upload a player file, upload custom sounds, and generate
-     Host/Team logins. Talks to the new backend via /api/admin/* and
-     /api/auctions/*. Does not read or modify any of the existing
-     app's variables directly — see loadAdminConfig() in the main
-     script, which is the only bridge between this panel's output
-     and the rest of the app.
-     ============================================================ -->
-<div id="adminScreen" class="hidden">
-  <div class="admin-wrap">
-    <button type="button" class="admin-back-link" id="adminBackToLogin">&larr; Back to login</button>
-    <h1>Auction Admin</h1>
-    <p class="sub">Create and configure your own auction — teams, purse, players, sounds, logins.</p>
-
-    <div id="adminAuthBox">
-      <div class="tabbar">
-        <button type="button" class="tab active" data-admtab="login">Log in</button>
-        <button type="button" class="tab" data-admtab="signup">Create account</button>
-      </div>
-      <div id="admLoginForm">
-        <label>Username<input type="text" id="admLoginUser"></label>
-        <label>Password<input type="password" id="admLoginPass"></label>
-        <button type="button" class="act btn-sold" id="admLoginBtn">Log in</button>
-      </div>
-      <div id="admSignupForm" class="hidden">
-        <label>Choose a username<input type="text" id="admSignupUser"></label>
-        <label>Choose a password<input type="password" id="admSignupPass" minlength="4"></label>
-        <button type="button" class="act btn-sold" id="admSignupBtn">Create account</button>
-      </div>
-      <div class="admin-error" id="admAuthError"></div>
-    </div>
-
-    <div id="adminDashboard" class="hidden">
-      <div class="admin-section">
-        <h2>Your auctions</h2>
-        <div id="admAuctionList"></div>
-        <button type="button" class="act btn-outline" id="admNewAuctionBtn">+ New auction</button>
-      </div>
-
-      <div class="admin-section hidden" id="admNewAuctionSection">
-        <h2>Create auction</h2>
-        <label>Auction name<input type="text" id="admName" placeholder="e.g. SPL Season 4"></label>
-        <div class="admin-grid3">
-          <label>Purse per team (Cr)<input type="number" id="admPurse" value="120" step="1"></label>
-          <label>Min squad<input type="number" id="admSquadMin" value="16"></label>
-          <label>Max squad<input type="number" id="admSquadMax" value="20"></label>
-        </div>
-        <label>Bid timer (seconds)<input type="number" id="admTimer" value="15"></label>
-        <label>Team codes (one per line, e.g. RCB)<textarea id="admTeams" rows="6" placeholder="ACC
-RCB
-LSZ
-VV"></textarea></label>
-        <button type="button" class="act btn-sold" id="admCreateBtn">Create</button>
-        <div class="admin-error" id="admCreateError"></div>
-      </div>
-
-      <div class="admin-section hidden" id="admManageSection">
-        <h3 id="admManageTitle"></h3>
-
-        <div class="admin-subsection">
-          <h4>1. Upload players</h4>
-          <p class="hint">CSV or Excel. Looks for columns like "Player Name" / "Base Price" / "Set".</p>
-          <input type="file" id="admPlayersFile" accept=".csv,.xlsx,.xls">
-          <button type="button" class="act btn-outline" id="admUploadPlayersBtn">Upload</button>
-          <div class="admin-result" id="admPlayersResult"></div>
-        </div>
-
-        <div class="admin-subsection">
-          <h4>2. Custom sounds <span class="optional">(optional)</span></h4>
-          <div class="admin-sound-row"><label>Bid</label><input type="file" id="admSoundBid" accept="audio/*"></div>
-          <div class="admin-sound-row"><label>Sold</label><input type="file" id="admSoundSold" accept="audio/*"></div>
-          <div class="admin-sound-row"><label>Unsold</label><input type="file" id="admSoundUnsold" accept="audio/*"></div>
-          <button type="button" class="act btn-outline" id="admUploadSoundsBtn">Save sounds</button>
-          <div class="admin-result" id="admSoundsResult"></div>
-        </div>
-
-        <div class="admin-subsection">
-          <h4>3. Host &amp; Team logins</h4>
-          <p class="hint">
-            Usernames are fixed by the app (<code>host</code>, and each
-            team's code like <code>RCB</code>) — only passwords are
-            editable. Type your own below, or click "Auto-fill random" to
-            get suggestions you can still edit before saving.
-          </p>
-          <div id="admCredEditRows"></div>
-          <div class="admin-cred-actions">
-            <button type="button" class="act btn-outline" id="admAutofillCredsBtn">Auto-fill random</button>
-            <button type="button" class="act btn-sold" id="admSaveCredsBtn">Save credentials</button>
-          </div>
-          <div class="admin-result" id="admCredsResult"></div>
-        </div>
-
-        <div class="admin-subsection">
-          <h4>4. Go live</h4>
-          <p class="hint">Activating makes this auction's teams/players/sounds live for everyone using the main login screen.</p>
-          <button type="button" class="act btn-sold" id="admActivateBtn">Activate this auction</button>
-          <div class="admin-result" id="admActivateResult"></div>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -196,7 +92,7 @@ VV"></textarea></label>
         </svg>
       </div>
       <div>
-        <h1>SPL SEASON 3 — LIVE AUCTION</h1>
+        <h1>SSLT10 — LIVE AUCTION</h1>
         <p>591 players &middot; 12 franchises &middot; ₹120Cr purse each</p>
       </div>
     </div>
@@ -560,6 +456,8 @@ VV"></textarea></label>
 </div>
 
 <script src="/js/app.js"></script>
+<script src="/js/security-bridge.js"></script>
+<script src="/js/host-console.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
 <script src="/js/voice.js"></script>
 
@@ -571,7 +469,6 @@ VV"></textarea></label>
      reads /api/config/current — nothing here calls into the main
      app's functions directly.
      ============================================================ -->
-<script src="/js/admin.js"></script>
 <script src="/js/gsap-animations.js"></script>
 </body>
 </html>
