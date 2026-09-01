@@ -1,23 +1,15 @@
-const db = require('./db');
-
-// Authoritative live auction state. Large collections are normalized into
-// dedicated SQLite tables; the legacy document shape is kept only as an
-// in-memory compatibility API for the existing realtime client.
+const db=require('./db');
 function plain(v){return v&&typeof v==='object'&&!Array.isArray(v);}
 function del(v){return plain(v)&&v.__op==='delete';}
 function serverTs(v){return plain(v)&&v.__op==='serverTimestamp';}
 function clone(v){if(Array.isArray(v))return v.map(clone);if(plain(v)){const o={};for(const k of Object.keys(v))o[k]=clone(v[k]);return o;}return v;}
 function readMeta(){const row=db.get('SELECT data FROM live_state WHERE id=1');try{return row?JSON.parse(row.data||'{}'):{};}catch{return {};}}
 function loadState(){
-  const doc=readMeta();
-  doc.auctionState={};
-  for(const r of db.query('SELECT player_key,status,team,price_cr FROM live_auction_state'))doc.auctionState[String(r.player_key)]={status:r.status,team:r.team||undefined,priceCr:r.price_cr==null?undefined:Number(r.price_cr)};
-  doc.bidHistory={};
-  for(const r of db.query('SELECT player_key,seq,team,price_cr,created_at FROM live_bids ORDER BY player_key,seq')){const k=String(r.player_key);(doc.bidHistory[k]||=[]).push({team:r.team,priceCr:Number(r.price_cr),ts:r.created_at});}
-  doc.passedTeams={};
-  for(const r of db.query('SELECT player_key,team FROM live_passes ORDER BY player_key,created_at')){const k=String(r.player_key);(doc.passedTeams[k]||=[]).push(r.team);}
-  doc.chatMessages=db.query('SELECT sender,role,text,ts FROM live_chat ORDER BY id DESC LIMIT 200').reverse();
-  return doc;
+ const doc=readMeta();doc.auctionState={};
+ for(const r of db.query('SELECT player_key,status,team,price_cr FROM live_auction_state'))doc.auctionState[String(r.player_key)]={status:r.status,team:r.team||undefined,priceCr:r.price_cr==null?undefined:Number(r.price_cr)};
+ doc.bidHistory={};for(const r of db.query('SELECT player_key,seq,team,price_cr,created_at FROM live_bids ORDER BY player_key,seq')){const k=String(r.player_key);(doc.bidHistory[k]||=[]).push({team:r.team,priceCr:Number(r.price_cr),ts:r.created_at});}
+ doc.passedTeams={};for(const r of db.query('SELECT player_key,team FROM live_passes ORDER BY player_key,created_at')){const k=String(r.player_key);(doc.passedTeams[k]||=[]).push(r.team);}
+ doc.chatMessages=db.query('SELECT sender,role,text,ts FROM live_chat ORDER BY id DESC LIMIT 200').reverse();return doc;
 }
 let doc=loadState();
 function setMeta(meta){db.run('UPDATE live_state SET data=? WHERE id=1',[JSON.stringify(meta)]);}
@@ -28,30 +20,24 @@ function persistBidHistoryKey(key,list,now){if(del(list)){db.run('DELETE FROM li
 function persistPasses(value,now){if(!plain(value))return;for(const [key,list] of Object.entries(value)){if(del(list)){db.run('DELETE FROM live_passes WHERE player_key=?',[key]);continue;}if(!Array.isArray(list))continue;const existing=new Set(db.query('SELECT team FROM live_passes WHERE player_key=?',[key]).map(r=>r.team));for(const team of list)if(!existing.has(team))db.run('INSERT OR IGNORE INTO live_passes(player_key,team,created_at) VALUES(?,?,?)',[key,team,now]);}}
 function persistChat(value,now){if(!Array.isArray(value))return;for(const m of value.slice(-50)){if(!m||!m.text||!m.sender)continue;const found=db.get('SELECT id FROM live_chat WHERE sender=? AND text=? AND ts=? LIMIT 1',[String(m.sender),String(m.text),Number(m.ts)||now]);if(!found)db.run('INSERT INTO live_chat(sender,role,text,ts) VALUES(?,?,?,?)',[String(m.sender),String(m.role||''),String(m.text),Number(m.ts)||now]);}db.run('DELETE FROM live_chat WHERE id NOT IN (SELECT id FROM live_chat ORDER BY id DESC LIMIT 200)');}
 function persistUpdates(updates,now){
-  const meta=readMeta();
-  const metaKeys=new Set(['currentIdx','currentBid','timerEndAt','paused','autoAdvance','auctionStarted','_clockSyncTs','presence','sessionLocks','lastResolvedKey','lastResolvedIdx']);
-  for(const [rawKey,value] of Object.entries(updates||{})){
-    const key=rawKey.includes('.')?rawKey.split('.')[0]:rawKey;
-    if(key==='auctionState'){if(rawKey==='auctionState'&&plain(value))for(const [k,v] of Object.entries(value))persistAuctionStateValue(k,v,now);else if(rawKey.startsWith('auctionState.'))persistAuctionStateValue(rawKey.slice(14),value,now);}
-    else if(key==='bidHistory'){if(rawKey==='bidHistory'&&plain(value))for(const [k,v] of Object.entries(value))persistBidHistoryKey(k,v,now);else if(rawKey.startsWith('bidHistory.'))persistBidHistoryKey(rawKey.slice(11),value,now);}
-    else if(key==='passedTeams')persistPasses(value,now);
-    else if(key==='chatMessages')persistChat(value,now);
-    else if(metaKeys.has(key)){if(rawKey.includes('.'))setPath(meta,key,value);else if(del(value))delete meta[key];else meta[key]=clone(value);}
-  }
-  delete meta.auctionState;delete meta.bidHistory;delete meta.passedTeams;delete meta.chatMessages;
-  setMeta(meta);
+ const meta=readMeta();const metaKeys=new Set(['currentIdx','currentBid','timerEndAt','paused','autoAdvance','auctionStarted','_clockSyncTs','presence','sessionLocks','lastResolvedKey','lastResolvedIdx']);
+ for(const [rawKey,value] of Object.entries(updates||{})){const key=rawKey.includes('.')?rawKey.split('.')[0]:rawKey;
+  if(key==='auctionState'){if(rawKey==='auctionState'&&plain(value))for(const [k,v] of Object.entries(value))persistAuctionStateValue(k,v,now);else if(rawKey.startsWith('auctionState.'))persistAuctionStateValue(rawKey.slice(14),value,now);}
+  else if(key==='bidHistory'){if(rawKey==='bidHistory'&&plain(value))for(const [k,v] of Object.entries(value))persistBidHistoryKey(k,v,now);else if(rawKey.startsWith('bidHistory.'))persistBidHistoryKey(rawKey.slice(11),value,now);}
+  else if(key==='passedTeams')persistPasses(value,now);else if(key==='chatMessages')persistChat(value,now);else if(metaKeys.has(key)){if(rawKey.includes('.'))setPath(meta,key,value);else if(del(value))delete meta[key];else meta[key]=clone(value);}
+ }
+ delete meta.auctionState;delete meta.bidHistory;delete meta.passedTeams;delete meta.chatMessages;setMeta(meta);
 }
 function getDoc(){return doc;}
 function resolveSentinelsDeep(source,now){if(del(source))return source;if(serverTs(source))return{__ts:now};if(Array.isArray(source))return source.map(v=>resolveSentinelsDeep(v,now));if(plain(source)){const out={};for(const k of Object.keys(source))out[k]=resolveSentinelsDeep(source[k],now);return out;}return source;}
 function applySet(updates){const now=Date.now();mergeInto(doc,updates||{});persistUpdates(updates||{},now);return{doc,patch:resolveSentinelsDeep(updates||{},now)};}
 
-// Compatibility transaction API. New direct writes never acquire this lock;
-// the lock exists only for the legacy frontend transaction calls.
-let lockHolder=null,currentTxId=null,lockTimer=null;const queue=[];const TX_TIMEOUT_MS=4000;
-function grantLock(socketId,resolve){lockHolder=socketId;currentTxId=Math.random().toString(36).slice(2)+Date.now().toString(36);clearTimeout(lockTimer);lockTimer=setTimeout(()=>{if(lockHolder===socketId)releaseLock();},TX_TIMEOUT_MS);resolve({txId:currentTxId,doc:clone(doc)});}
-function beginTransaction(socketId){return new Promise(resolve=>{if(lockHolder===null)grantLock(socketId,resolve);else queue.push(()=>grantLock(socketId,resolve));});}
-function releaseLock(){clearTimeout(lockTimer);lockTimer=null;lockHolder=null;currentTxId=null;const next=queue.shift();if(next)next();}
-function commitTransaction(socketId,txId,updates){if(lockHolder!==socketId||txId!==currentTxId)throw new Error('Transaction expired — please try again.');const result=applySet(updates||{});releaseLock();return result;}
-function abortTransaction(socketId,txId){if(lockHolder===socketId&&txId===currentTxId)releaseLock();}
-function releaseIfHeldBy(socketId){if(lockHolder===socketId)releaseLock();}
+// Transactions are optimistic: begin returns a snapshot and a short-lived
+// token, while commit validates against the latest authoritative document.
+// There is no global waiting queue, so simultaneous bids don't block each other.
+const txs=new Map();const TX_TIMEOUT_MS=4000;
+function beginTransaction(socketId){const txId=Math.random().toString(36).slice(2)+Date.now().toString(36);const timer=setTimeout(()=>txs.delete(txId),TX_TIMEOUT_MS);txs.set(txId,{socketId,timer});return Promise.resolve({txId,doc:clone(doc)});}
+function commitTransaction(socketId,txId,updates){const tx=txs.get(txId);if(!tx||tx.socketId!==socketId)throw new Error('Transaction expired — please try again.');clearTimeout(tx.timer);txs.delete(txId);return applySet(updates||{});}
+function abortTransaction(socketId,txId){const tx=txs.get(txId);if(tx&&tx.socketId===socketId){clearTimeout(tx.timer);txs.delete(txId);}}
+function releaseIfHeldBy(socketId){for(const [id,tx] of txs){if(tx.socketId===socketId){clearTimeout(tx.timer);txs.delete(id);}}}
 module.exports={getDoc,applySet,beginTransaction,commitTransaction,abortTransaction,releaseIfHeldBy};
