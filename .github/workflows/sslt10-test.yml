@@ -1,4 +1,4 @@
-name: SSLT10 Syntax Check
+name: SSLT10 Full Check
 
 on:
   push:
@@ -24,12 +24,14 @@ jobs:
           node --check src/server.js
           node --check src/routes.js
           node --check src/db.js
+          node --check src/liveState.js
           node --check src/hostAuth.js
       - name: Check browser script syntax
         run: |
           node --check public/js/realtime-shim.js
           node --check public/js/security-bridge.js
           node --check public/js/host-console.js
+          node --check public/js/host-mobile-fixes.js
       - name: Smoke boot
         env:
           SQLITE_PATH: /tmp/sslt10-test.db
