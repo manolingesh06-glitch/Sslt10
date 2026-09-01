@@ -1,0 +1,38 @@
+# One-click deploy on Render: https://dashboard.render.com/blueprints
+# Push this repo to GitHub, then in Render choose
+# "New +" -> "Blueprint" -> point it at the repo. Render reads this file
+# and creates the service automatically.
+#
+# JWT_SECRET is marked generateValue so Render creates a strong random
+# one for you automatically — you don't need to set it by hand.
+
+services:
+  - type: web
+    name: auction-admin-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 4000
+      - key: SQLITE_PATH
+        value: /app/data/admin.db
+      - key: BCRYPT_SALT_ROUNDS
+        value: 10
+      - key: JWT_EXPIRES_IN
+        value: 30d
+    disks:
+      # SQLite DB (admin accounts + auction configs) — path is configurable
+      # via SQLITE_PATH above, so this mount just needs to match it.
+      - name: auction-data
+        mountPath: /app/data
+        sizeGB: 1
+      # Uploaded sound files — the app writes these to ./uploads relative
+      # to its own folder (not configurable via env), so this mount must
+      # sit exactly at /app/uploads for uploads to survive a redeploy.
+      - name: auction-uploads
+        mountPath: /app/uploads
+        sizeGB: 1
