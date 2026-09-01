@@ -1,7 +1,3 @@
--- SSLT10 clean schema.
--- Legacy admin/auction configuration tables are intentionally not used.
--- Teams and players are created by the Host; live auction state stays in live_state.
-
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS tournaments (
@@ -64,7 +60,13 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_owner_team ON users(team_id) WHERE role = 'owner' AND team_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_owner_team ON users(team_id) WHERE role='owner' AND team_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT DEFAULT (datetime('now'))
+);
 
 CREATE TABLE IF NOT EXISTS live_state (
   id INTEGER PRIMARY KEY CHECK (id = 1),
