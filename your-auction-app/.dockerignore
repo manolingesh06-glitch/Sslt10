@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+.env
+data
+uploads/sounds/*
+!uploads/sounds/.gitkeep
+.git
+.DS_Store
+*.md
