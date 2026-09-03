@@ -2,6 +2,7 @@
   "name": "ssl10-auction",
   "version": "1.0.0",
   "description": "SSL10 live auction app — real-time bidding room (Socket.IO) plus a Host Setup screen for configuring teams, purse, players, sounds, and logins.",
+  "engines": { "node": "20.x" },
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
