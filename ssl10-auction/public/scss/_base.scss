@@ -1,0 +1,40 @@
+@use 'tokens' as *;
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  height: 100%;
+  background: $paper;
+  color: $ink;
+  font-family: $font-sans;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+body {
+  // subtle paper grain — cheap, static, never repaints, so it never costs us frame time
+  background-image:
+    radial-gradient(rgba(58,50,38,0.025) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+h1, h2, h3, .display {
+  font-family: $font-display;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+p { margin: 0; }
+button, input, select, textarea { font-family: inherit; }
+input, select, button {
+  outline: none;
+  &:focus-visible { outline: 2px solid $maroon; outline-offset: 2px; }
+}
+::selection { background: $gold-tint; color: $maroon-deep; }
+
+// tabular numerals everywhere money/counters appear — prevents digit
+// jitter/reflow as bid amounts tick up, which is a big source of
+// "laggy" perception even when the animation itself is smooth
+.num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+
+// promote to its own compositor layer only where we actually animate —
+// applying this globally is a common cause of jank, not a fix for it
+.gsap-layer { will-change: transform, opacity; }
