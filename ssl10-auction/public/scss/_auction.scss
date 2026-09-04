@@ -1,0 +1,534 @@
+@use 'tokens' as *;
+
+.board {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 16px 100px;
+  gap: 16px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+// ---------- Top bar ----------
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px;
+}
+.topbar__title { font-size: 14px; color: $ink-muted; letter-spacing: 0.03em; }
+.topbar__who { font-size: 13px; font-weight: 600; color: $maroon; }
+
+// ---------- Lot card (current player) ----------
+.lot {
+  position: relative;
+  padding: 28px 22px 24px;
+  text-align: center;
+  overflow: hidden;
+}
+.lot__set {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: $ink-muted;
+  border: 1px solid $paper-line;
+  border-radius: 999px;
+  padding: 3px 10px;
+  margin-bottom: 14px;
+}
+.lot__name {
+  font-size: 30px;
+  color: $ink;
+  line-height: 1.15;
+  margin-bottom: 4px;
+}
+.lot__meta {
+  font-size: 13px;
+  color: $ink-muted;
+  margin-bottom: 20px;
+}
+.lot__base { color: $gold-deep; font-weight: 600; }
+
+.lot__bidrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 0;
+  border-top: 1px solid $paper-line-soft;
+  border-bottom: 1px solid $paper-line-soft;
+  margin-bottom: 18px;
+}
+.lot__bidlabel { font-size: 11px; letter-spacing: 0.05em; color: $ink-muted; text-transform: uppercase; }
+.lot__bidamt {
+  font-family: $font-display;
+  font-size: 44px;
+  color: $maroon;
+  line-height: 1.1;
+}
+.lot__bidteam { font-size: 15px; font-weight: 600; color: $ink; margin-top: 2px; }
+
+// ---------- Timer ----------
+.timer {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+}
+.timer svg { transform: rotate(-90deg); }
+.timer__track { fill: none; stroke: $paper-line-soft; stroke-width: 5; }
+.timer__fill {
+  fill: none;
+  stroke: $maroon;
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke none; // GSAP drives stroke-dashoffset directly, not CSS transitions
+}
+.timer__num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: $ink;
+}
+.timer.is-urgent .timer__fill { stroke: $unsold; }
+.timer.is-urgent .timer__num { color: $unsold; }
+
+// ---------- Actions ----------
+.actions { display: flex; flex-direction: column; gap: 10px; }
+.actions__quick { display: flex; gap: 10px; }
+.actions__quick .btn { flex: 1; }
+.actions__custom { display: flex; gap: 8px; }
+.actions__custom input {
+  flex: 1;
+  height: 46px;
+  border-radius: $radius-sm;
+  border: 1px solid $paper-line;
+  background: $paper-light;
+  padding: 0 14px;
+  font-size: 15px;
+  color: $ink;
+}
+.actions__waiting {
+  text-align: center;
+  padding: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: $sold;
+  background: $sold-tint;
+  border-radius: $radius-sm;
+}
+.actions__error { min-height: 18px; font-size: 12px; color: $unsold; text-align: center; }
+
+// ---------- Host controls ----------
+.host-controls {
+  display: flex;
+  gap: 10px;
+}
+.host-controls .btn { flex: 1; }
+
+// ---------- Passed strip ----------
+.passed {
+  font-size: 12px;
+  color: $ink-faint;
+  text-align: center;
+}
+
+// ---------- Team strip ----------
+.teams {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+.team-chip {
+  flex: 0 0 auto;
+  min-width: 108px;
+  padding: 10px 12px;
+  border-radius: $radius-md;
+  background: $paper-light;
+  border: 1px solid $paper-line-soft;
+  transition: border-color $dur-fast $ease-out, transform $dur-fast $ease-out;
+
+  &.is-leading {
+    border-color: $maroon;
+    box-shadow: 0 0 0 1px $maroon inset;
+  }
+}
+.team-chip__name { font-size: 13px; font-weight: 700; color: $ink; }
+.team-chip__purse { font-size: 11px; color: $ink-muted; margin-top: 2px; }
+.team-chip__count { font-size: 11px; color: $ink-faint; }
+
+// ---------- SOLD / UNSOLD overlay ----------
+.reveal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0;
+}
+.reveal__stamp {
+  font-family: $font-display;
+  font-size: 64px;
+  letter-spacing: 0.02em;
+  padding: 14px 40px;
+  border-radius: $radius-md;
+  transform: scale(0.6) rotate(-6deg);
+  box-shadow: $shadow-raised;
+}
+.reveal__stamp--sold { background: $sold-tint; color: $sold; border: 3px solid $sold; }
+.reveal__stamp--unsold { background: $unsold-tint; color: $unsold; border: 3px solid $unsold; }
+
+// ---------- Bottom nav (queue / chat toggles) ----------
+.bottomnav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: $paper-light;
+  border-top: 1px solid $paper-line-soft;
+  z-index: 40;
+}
+.bottomnav .btn { flex: 1; position: relative; }
+.bottomnav__badge {
+  position: absolute;
+  top: -4px; right: 8px;
+  background: $maroon;
+  color: $paper-light;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 999px;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+}
+
+// ---------- Slide-up panel (queue / chat) ----------
+.panel {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(58, 50, 38, 0.35);
+  opacity: 0;
+  pointer-events: none;
+
+  &.is-open { pointer-events: auto; }
+}
+.panel__sheet {
+  width: 100%;
+  max-height: 82dvh;
+  background: $paper;
+  border-radius: 18px 18px 0 0;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+}
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 10px;
+  border-bottom: 1px solid $paper-line-soft;
+  flex: 0 0 auto;
+}
+.panel__title { font-size: 17px; color: $maroon; font-family: $font-display; }
+.panel__close {
+  width: 30px; height: 30px;
+  border-radius: 999px;
+  border: 1px solid $paper-line;
+  background: $paper-light;
+  font-size: 15px;
+  color: $ink-muted;
+  cursor: pointer;
+}
+.panel__body {
+  overflow-y: auto;
+  padding: 12px 18px 18px;
+  flex: 1 1 auto;
+}
+
+// ---------- Player queue ----------
+.queue__search {
+  height: 42px;
+  width: 100%;
+  border-radius: $radius-sm;
+  border: 1px solid $paper-line;
+  background: $paper-light;
+  padding: 0 12px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+.queue__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px;
+  border-bottom: 1px solid $paper-line-soft;
+  font-size: 14px;
+}
+.queue__row-name { font-weight: 600; color: $ink; }
+.queue__row-meta { font-size: 12px; color: $ink-muted; }
+.queue__row-action {
+  border: none;
+  background: $maroon;
+  color: $paper-light;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: $radius-sm;
+  cursor: pointer;
+}
+.queue__row.is-live .queue__row-name { color: $maroon; }
+
+// ---------- Chat ----------
+.chat__list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.chat__msg { max-width: 82%; }
+.chat__msg-meta { font-size: 11px; color: $ink-faint; margin-bottom: 2px; }
+.chat__msg-bubble {
+  background: $paper-light;
+  border: 1px solid $paper-line-soft;
+  border-radius: $radius-md;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: $ink;
+}
+.chat__msg.is-host .chat__msg-bubble { background: $maroon-tint; border-color: rgba(92,26,26,0.2); }
+.chat__compose {
+  display: flex;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid $paper-line-soft;
+  position: sticky;
+  bottom: 0;
+  background: $paper;
+}
+.chat__compose input {
+  flex: 1;
+  height: 42px;
+  border-radius: $radius-sm;
+  border: 1px solid $paper-line;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+// ---------- Chat nickname editor ----------
+.chat__whoami {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 12px;
+  font-size: 12px;
+  color: $ink-muted;
+}
+.chat__whoami button {
+  background: none;
+  border: none;
+  color: $maroon;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.chat__nickname-edit {
+  display: none;
+  gap: 8px;
+  padding: 0 2px 12px;
+  &.is-open { display: flex; }
+}
+.chat__nickname-edit input {
+  flex: 1;
+  height: 38px;
+  border-radius: $radius-sm;
+  border: 1px solid $paper-line;
+  padding: 0 10px;
+  font-size: 13px;
+}
+.chat__nickname-edit button {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: $radius-sm;
+  border: none;
+  background: $maroon;
+  color: $paper-light;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+// ---------- Confetti burst (sold celebration) ----------
+.confetti-piece {
+  position: fixed;
+  top: -10px;
+  width: 8px; height: 14px;
+  z-index: 55;
+  pointer-events: none;
+}
+
+// ---------- Reset confirm (uses .modal-gate, no extra CSS needed) ----------
+.chat-toast {
+  position: fixed;
+  left: 16px; right: 16px;
+  bottom: 70px;
+  z-index: 45;
+  background: $paper-light;
+  border: 1px solid $paper-line;
+  border-radius: $radius-md;
+  box-shadow: $shadow-raised;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: $ink;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+.chat-toast strong { color: $maroon; }
+// ---------- My Team panel ----------
+.myteam-summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: $paper;
+  border-radius: $radius-md;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+.myteam-summary__stat { text-align: center; }
+.myteam-summary__stat .num { display: block; font-size: 18px; font-weight: 700; color: $maroon; }
+.myteam-summary__stat span:last-child { color: $ink-muted; font-size: 11px; }
+.myteam-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 9px 4px;
+  border-bottom: 1px solid $paper-line-soft;
+  font-size: 13px;
+}
+.myteam-row__price { color: $gold-deep; font-weight: 600; }
+.myteam-empty { text-align: center; color: $ink-faint; font-size: 13px; padding: 20px 0; }
+
+// ---------- Bid history ----------
+.bidhist {
+  max-height: 90px;
+  overflow-y: auto;
+  margin: 10px 0;
+  padding: 0 2px;
+}
+.bidhist__row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: $ink-muted;
+  padding: 3px 0;
+}
+.bidhist__row .num { color: $ink; font-weight: 600; }
+
+// ---------- Progress ----------
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: $ink-muted;
+  margin: 4px 0 14px;
+}
+.progress__bar {
+  flex: 1;
+  height: 5px;
+  background: $paper-line-soft;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress__fill {
+  height: 100%;
+  background: $maroon;
+  border-radius: 999px;
+  width: 0%;
+  transition: width 0.4s ease;
+}
+
+// ---------- Host toolbar (auto-advance / pause / export) ----------
+.host-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.host-toolbar .btn { flex: 1; min-width: 100px; font-size: 12px; height: 40px; }
+.toggle-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 40px;
+  border-radius: $radius-sm;
+  border: 1px solid $paper-line;
+  background: $paper-light;
+  font-size: 12px;
+  color: $ink-muted;
+  cursor: pointer;
+  user-select: none;
+  &.is-on { border-color: $maroon; color: $maroon; background: $maroon-tint; }
+}
+
+// ---------- Quick bid chips ----------
+.quickbids { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+.quickbid-chip {
+  flex: 1;
+  min-width: 64px;
+  height: 40px;
+  border-radius: $radius-sm;
+  border: 1px solid $paper-line;
+  background: $paper-light;
+  color: $ink;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.quickbid-chip:active { background: $maroon; color: $paper-light; }
+
+// ---------- Pause overlay ----------
+.pause-overlay {
+  text-align: center;
+  padding: 14px;
+  background: $unsold-tint;
+  color: $unsold;
+  border-radius: $radius-md;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+// ---------- Custom modal (replaces alert/confirm) ----------
+.modal-gate {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(58,50,38,0.4);
+  padding: 24px;
+  opacity: 0;
+  pointer-events: none;
+  &.is-open { pointer-events: auto; }
+}
+.modal-gate__box {
+  max-width: 320px;
+  width: 100%;
+  padding: 24px 20px;
+  text-align: center;
+  transform: scale(0.94);
+}
+.modal-gate__msg { font-size: 14px; color: $ink; margin-bottom: 18px; }
+.modal-gate__actions { display: flex; gap: 10px; }
+.modal-gate__actions .btn { flex: 1; }

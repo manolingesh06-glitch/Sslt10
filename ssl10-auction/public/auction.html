@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SSL T10 — Season 1 · Live Auction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css2/main.css">
+<!-- Original stylesheet, loaded only for the reused voice-call widget below
+     (its classes are namespaced with a voice-/pill-/modal- prefix and don't
+     collide with the new design system, so this is safe to load alongside). -->
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<main class="board">
+  <div class="topbar">
+    <div class="topbar__title">SSL T10 · Season 1</div>
+    <button id="muteToggle" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px">🔊</button>
+    <div class="topbar__who" id="whoami">—</div>
+  </div>
+
+  <div class="progress">
+    <span id="progressLabel">0 / 0</span>
+    <div class="progress__bar"><div class="progress__fill" id="progressFill"></div></div>
+  </div>
+
+  <div class="pause-overlay" id="pauseOverlay" style="display:none">⏸ Auction paused by host</div>
+
+  <!-- Voice call — reused unchanged from the original app (voice.js + LiveKit),
+       restyled minimally to sit in the new layout. -->
+  <div class="voice-cluster" id="voiceCluster" style="justify-content:center">
+    <button class="voice-pill" id="joinBtn" title="Connect to the live voice call">
+      <span class="pill-ico">🎙️</span><span id="joinBtnTxt">Join Voice</span>
+    </button>
+    <button class="voice-icon-btn hidden" id="micToggleBtn" title="Mute microphone" aria-label="Toggle microphone">🎤</button>
+    <button class="voice-icon-btn hidden leave-btn" id="leaveVoiceBtn" title="Leave voice call" aria-label="Leave voice call">🚪</button>
+    <div class="voice-people-wrap">
+      <button class="voice-pill" id="voicePeopleBtn" title="See who's connected to voice">
+        <span class="pulse-dot hidden" id="voicePulseDot"></span>
+        <span class="pill-ico">👥</span><span id="voicePeopleCount">0 in voice</span><span class="voice-caret">▾</span>
+      </button>
+      <div class="voice-dropdown-backdrop" id="voiceDropdownBackdrop"></div>
+      <div class="voice-dropdown hidden" id="voiceDropdown">
+        <div class="voice-dropdown-hostrow hidden" id="voiceDropdownHostRow">
+          <button class="voice-dropdown-hostbtn" id="muteAllBtn">🔇 Mute All</button>
+          <button class="voice-dropdown-hostbtn" id="unmuteAllBtn">📢 Unmute All</button>
+        </div>
+        <div class="voice-dropdown-title">Owners in Voice</div>
+        <div class="voice-dropdown-list" id="voiceDropdownList">
+          <div class="voice-dropdown-empty">No one connected yet</div>
+        </div>
+      </div>
+    </div>
+    <span id="status" style="display:none"></span>
+  </div>
+
+  <div class="card lot" id="lotCard">
+    <div class="lot__set" id="lotSet">—</div>
+    <h1 class="lot__name display" id="lotName">Waiting for the host…</h1>
+    <div class="lot__meta">Base <span class="lot__base" id="lotBase">—</span></div>
+
+    <div class="timer" id="timer" style="display:none">
+      <svg viewBox="0 0 64 64" width="64" height="64">
+        <circle class="timer__track" cx="32" cy="32" r="28"></circle>
+        <circle class="timer__fill" id="timerFill" cx="32" cy="32" r="28"
+                stroke-dasharray="175.9" stroke-dashoffset="0"></circle>
+      </svg>
+      <div class="timer__num" id="timerNum">15</div>
+    </div>
+
+    <div class="lot__bidrow">
+      <div class="lot__bidlabel">Current bid</div>
+      <div class="lot__bidamt num" id="bidAmt">—</div>
+      <div class="lot__bidteam" id="bidTeam">No bids yet</div>
+    </div>
+
+    <div class="bidhist" id="bidHistory"></div>
+
+    <div class="reveal" id="reveal">
+      <div class="reveal__stamp" id="revealStamp"></div>
+    </div>
+  </div>
+
+  <!-- Owner controls -->
+  <div class="actions" id="ownerActions" style="display:none">
+    <div class="quickbids" id="quickBidChips"></div>
+    <div class="actions__quick">
+      <button class="btn btn--primary" id="quickBidBtn">Bid</button>
+      <button class="btn btn--ghost" id="outBtn">Out</button>
+    </div>
+    <div class="actions__custom">
+      <input type="number" id="customAmt" placeholder="Custom amount (Cr)" step="0.05" min="0">
+      <button class="btn btn--gold" id="customBidBtn">Place</button>
+    </div>
+    <div class="actions__error" id="bidError"></div>
+    <div class="actions__waiting" id="waitingBox" style="display:none">You're the highest bidder — waiting…</div>
+  </div>
+
+  <!-- Host controls -->
+  <div class="host-toolbar" id="hostToolbar" style="display:none">
+    <div class="toggle-chip" id="autoAdvanceToggle">⏭ Auto-advance: off</div>
+    <div class="toggle-chip" id="pauseToggle">⏸ Pause auction</div>
+    <button class="btn btn--ghost" id="resetAuctionBtn">↺ Reset auction</button>
+  </div>
+  <div class="host-toolbar" id="exportToolbar" style="display:none">
+    <button class="btn btn--ghost" id="exportAllBtn">⬇ Full results</button>
+    <button class="btn btn--ghost" id="exportUpcomingBtn">⬇ Upcoming</button>
+    <button class="btn btn--ghost" id="exportUnsoldBtn">⬇ Unsold</button>
+  </div>
+  <div class="host-toolbar" id="squadExportRow" style="display:none">
+    <select class="field" id="squadExportTeam" style="flex:2;height:40px;border-radius:4px;border:1px solid #C9BC9C;background:#FBF8F0;padding:0 10px;font-size:12px"></select>
+    <button class="btn btn--gold" id="exportSquadBtn">⬇ Export squad</button>
+  </div>
+  <div class="host-controls" id="hostActions" style="display:none">
+    <button class="btn btn--ghost" id="nextPlayerBtn">Release next player</button>
+    <button class="btn btn--gold" id="soldBtn">Sold</button>
+    <button class="btn btn--primary" id="unsoldBtn">Unsold</button>
+  </div>
+
+  <div class="passed" id="passedBar"></div>
+
+  <div class="teams" id="teamStrip"></div>
+</main>
+
+<!-- Bottom nav -->
+<div class="bottomnav">
+  <button class="btn btn--ghost" id="openQueueBtn">Players</button>
+  <button class="btn btn--ghost" id="openMyTeamBtn" style="display:none">My Team</button>
+  <button class="btn btn--ghost" id="undoBtn" style="display:none">Undo last</button>
+  <button class="btn btn--ghost" id="openChatBtn">
+    Chat
+    <span class="bottomnav__badge" id="chatBadge" style="display:none">0</span>
+  </button>
+</div>
+
+<!-- Player queue panel -->
+<div class="panel" id="queuePanel">
+  <div class="panel__sheet">
+    <div class="panel__header">
+      <div class="panel__title display">Players</div>
+      <button class="panel__close" id="closeQueueBtn">✕</button>
+    </div>
+    <div class="panel__body">
+      <input class="queue__search" id="queueSearch" placeholder="Search players…">
+      <div id="queueList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Chat panel -->
+<div class="panel" id="chatPanel">
+  <div class="panel__sheet">
+    <div class="panel__header">
+      <div class="panel__title display">Chat</div>
+      <button class="panel__close" id="closeChatBtn">✕</button>
+    </div>
+    <div class="panel__body">
+      <div class="chat__whoami">
+        <span>Chatting as <strong id="chatWhoAmI"></strong></span>
+        <button id="chatEditNameBtn">Edit name</button>
+      </div>
+      <div class="chat__nickname-edit" id="chatNicknameEdit">
+        <input id="chatNicknameInput" placeholder="Display name" maxlength="24">
+        <button id="chatNicknameSaveBtn">Save</button>
+      </div>
+      <div class="chat__list" id="chatList"></div>
+      <div class="chat__typing" id="chatTypingIndicator" style="min-height:16px;font-size:11px;color:#8A7B5E;font-style:italic;margin-bottom:4px"></div>
+      <div class="chat__compose">
+        <input id="chatInput" placeholder="Message…" maxlength="300">
+        <button class="btn btn--primary" id="chatSendBtn">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Join Voice name modal — required by voice.js -->
+<div id="joinNameModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:960;align-items:center;justify-content:center;">
+  <div class="modal-box">
+    <h3>Join Voice</h3>
+    <p>Enter the name others will see you as in the voice room.</p>
+    <div class="login-field">
+      <label>Your Name</label>
+      <input type="text" id="joinNameInput" maxlength="24" placeholder="e.g. Ravi">
+    </div>
+    <div class="login-error" id="joinNameError"></div>
+    <div class="modal-actions">
+      <button class="act btn-nav" id="joinNameCancelBtn">Cancel</button>
+      <button class="act btn-sold" id="joinNameConfirmBtn">🎙️ Join</button>
+    </div>
+  </div>
+</div>
+
+<!-- My Team panel -->
+<div class="panel" id="myTeamPanel">
+  <div class="panel__sheet">
+    <div class="panel__header">
+      <div class="panel__title display">My Team</div>
+      <button class="panel__close" id="closeMyTeamBtn">✕</button>
+    </div>
+    <div class="panel__body">
+      <div class="myteam-summary" id="myTeamSummary"></div>
+      <button class="btn btn--ghost" id="exportMySquadBtn" style="width:100%;margin-bottom:14px">⬇ Export my squad</button>
+      <div id="myTeamList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Reusable modal (replaces browser alert/confirm) -->
+<div class="modal-gate" id="modalGate">
+  <div class="card modal-gate__box">
+    <div class="modal-gate__msg" id="modalMsg"></div>
+    <div class="modal-gate__actions" id="modalActions"></div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/realtime-shim.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="/js2/auction.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+<script src="/js/voice.js"></script>
+</body>
+</html>
