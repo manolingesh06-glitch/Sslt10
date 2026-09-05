@@ -1,0 +1,153 @@
+@use 'tokens' as *;
+
+.setup {
+  min-height: 100dvh;
+  padding: 20px 16px 60px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+// ---------- Unlock gate ----------
+.gate {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.gate__panel {
+  width: 100%;
+  max-width: 340px;
+  padding: 36px 28px;
+  text-align: center;
+}
+.gate__title { font-size: 26px; color: $maroon; margin-bottom: 6px; }
+.gate__sub { font-size: 13px; color: $ink-muted; margin-bottom: 22px; }
+
+// ---------- Header ----------
+.setup__header { margin-bottom: 20px; }
+.setup__eyebrow { font-size: 12px; letter-spacing: 0.06em; color: $ink-muted; text-transform: uppercase; }
+.setup__title { font-size: 28px; color: $maroon; margin-top: 4px; }
+
+// ---------- Status banner ----------
+.setup__status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: $radius-md;
+  margin-bottom: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.setup__status--live { background: $sold-tint; color: $sold; }
+.setup__status--draft { background: $gold-tint; color: $gold-deep; }
+
+// ---------- Sections ----------
+.setup__section {
+  margin-bottom: 16px;
+  padding: 20px;
+}
+.setup__section-title {
+  font-size: 15px;
+  color: $maroon;
+  margin-bottom: 4px;
+}
+.setup__section-hint {
+  font-size: 12px;
+  color: $ink-muted;
+  margin-bottom: 16px;
+}
+.setup__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.setup__row--full { grid-template-columns: 1fr; }
+
+// ---------- Team chips input ----------
+.team-input-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.team-input-row input { flex: 1; }
+.team-input-row .btn { padding: 0 16px; height: 46px; }
+
+.team-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.team-chip-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: $paper;
+  border: 1px solid $paper-line;
+  border-radius: 999px;
+  padding: 6px 8px 6px 14px;
+  font-size: 13px;
+  color: $ink;
+}
+.team-chip-tag button {
+  border: none;
+  background: $paper-line-soft;
+  color: $ink-muted;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+}
+
+// ---------- File drop ----------
+.filedrop {
+  border: 1.5px dashed $paper-line;
+  border-radius: $radius-md;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color $dur-fast $ease-out, background $dur-fast $ease-out;
+
+  &:hover { border-color: $ink-faint; background: rgba(58,50,38,0.02); }
+  &.has-file { border-color: $sold; background: $sold-tint; }
+
+  input { display: none; }
+}
+.filedrop__label { font-size: 13px; color: $ink-muted; }
+.filedrop__result { font-size: 12px; color: $ink; margin-top: 6px; }
+
+// ---------- Credentials table ----------
+.creds-table { display: flex; flex-direction: column; gap: 8px; }
+.creds-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: $paper;
+  border-radius: $radius-sm;
+}
+.creds-row__name { font-size: 13px; font-weight: 600; color: $ink; flex: 1; }
+.creds-row input {
+  width: 130px;
+  height: 38px;
+  border-radius: $radius-sm;
+  border: 1px solid $paper-line;
+  background: $paper-light;
+  padding: 0 10px;
+  font-size: 13px;
+  font-family: $font-mono;
+}
+
+// ---------- Sticky action bar ----------
+.setup__actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 10px;
+  padding: 14px 0 0;
+  background: linear-gradient(to top, $paper 60%, transparent);
+}
+.setup__actions .btn { flex: 1; }
+
+.setup__toast {
+  font-size: 13px;
+  text-align: center;
+  margin-top: 10px;
+  min-height: 18px;
+}
